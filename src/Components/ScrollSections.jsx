@@ -5,6 +5,8 @@ const ScrollSections = () => {
     const [isAnimating, setIsAnimating] = useState(false);
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const [isMobile, setIsMobile] = useState(false);
+    const [canScrollUp, setCanScrollUp] = useState(false);
+    const [canScrollDown, setCanScrollDown] = useState(false);
     const containerRef = useRef(null);
     const contentRef = useRef(null);
     const imageRef = useRef(null);
@@ -15,6 +17,8 @@ const ScrollSections = () => {
     const touchStartY = useRef(0);
     const touchStartX = useRef(0);
     const isScrolling = useRef(false);
+    const hasReachedFirstSection = useRef(false);
+    const hasReachedLastSection = useRef(false);
 
     const sections = [
         {
@@ -115,6 +119,21 @@ const ScrollSections = () => {
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, [isMobile]);
 
+    // Update scroll permissions based on current section
+    useEffect(() => {
+        // Can scroll up only if we've reached the first section (section 0)
+        if (currentSection === 0) {
+            hasReachedFirstSection.current = true;
+        }
+        setCanScrollUp(hasReachedFirstSection.current && currentSection === 0);
+
+        // Can scroll down only if we've reached the last section (section 7)
+        if (currentSection === sections.length - 1) {
+            hasReachedLastSection.current = true;
+        }
+        setCanScrollDown(hasReachedLastSection.current && currentSection === sections.length - 1);
+    }, [currentSection, sections.length]);
+
     const goToSection = (index) => {
         if (isAnimating || index === currentSection || isScrolling.current) return;
         if (index < 0 || index >= sections.length) return;
@@ -169,12 +188,33 @@ const ScrollSections = () => {
         const handleWheel = e => {
             const deltaY = e.deltaY;
 
-            // Allow normal page scrolling when at boundaries
-            if ((currentSection === 0 && deltaY < 0) ||
-                (currentSection === sections.length - 1 && deltaY > 0)) {
-                return;
+            // Check if trying to scroll up from first section
+            if (currentSection === 0 && deltaY < 0) {
+                if (canScrollUp) {
+                    // Allow normal page scrolling upward
+                    return;
+                } else {
+                    // Prevent scrolling up
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
             }
 
+            // Check if trying to scroll down from last section
+            if (currentSection === sections.length - 1 && deltaY > 0) {
+                if (canScrollDown) {
+                    // Allow normal page scrolling downward
+                    return;
+                } else {
+                    // Prevent scrolling down
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+            }
+
+            // Prevent normal page scrolling for all other cases
             e.preventDefault();
             e.stopPropagation();
 
@@ -210,8 +250,13 @@ const ScrollSections = () => {
             const currentY = e.touches[0].clientY;
             const deltaY = touchStartY.current - currentY;
             
-            // Only prevent default if we're in the middle of sections or moving in the controlled direction
-            if (!((currentSection === 0 && deltaY < 0) || (currentSection === sections.length - 1 && deltaY > 0))) {
+            // Check scroll permissions for touch
+            const shouldPrevent = 
+                (currentSection === 0 && deltaY < 0 && !canScrollUp) ||
+                (currentSection === sections.length - 1 && deltaY > 0 && !canScrollDown) ||
+                (currentSection > 0 && currentSection < sections.length - 1);
+            
+            if (shouldPrevent) {
                 e.preventDefault();
                 e.stopPropagation();
             }
@@ -224,14 +269,17 @@ const ScrollSections = () => {
             const deltaY = touchStartY.current - touchEndY;
             const now = Date.now();
 
-            // Increased threshold for mobile for better UX
             const mobileThreshold = 50;
 
-            // Allow normal page scrolling when at boundaries
-            if ((currentSection === 0 && deltaY < 0) ||
-                (currentSection === sections.length - 1 && deltaY > 0)) {
+            // Check if we should allow page scrolling
+            if (currentSection === 0 && deltaY < 0 && canScrollUp) {
                 touchStartY.current = 0;
-                return;
+                return; // Allow page scroll up
+            }
+
+            if (currentSection === sections.length - 1 && deltaY > 0 && canScrollDown) {
+                touchStartY.current = 0;
+                return; // Allow page scroll down
             }
 
             if (Math.abs(deltaY) > mobileThreshold && (now - lastScrollTime.current) >= scrollCooldown) {
@@ -286,7 +334,7 @@ const ScrollSections = () => {
             containerElement.removeEventListener('touchend', handleTouchEnd);
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [currentSection, isAnimating, isMobile, sections.length]);
+    }, [currentSection, isAnimating, isMobile, sections.length, canScrollUp, canScrollDown]);
 
     const currentData = sections[currentSection];
 
@@ -295,10 +343,12 @@ const ScrollSections = () => {
             ref={containerRef}
             className="h-screen w-full overflow-hidden relative"
             style={{
-                touchAction: 'pan-y', // Allow vertical panning but control it
+                touchAction: 'pan-y',
                 overscrollBehavior: 'none'
             }}
         >
+     
+
             <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-gray-800">
                 <div className="absolute inset-0 overflow-hidden">
                     {[...Array(isMobile ? 20 : 50)].map((_, i) => (
@@ -342,7 +392,6 @@ const ScrollSections = () => {
                     ))}
                 </div>
             )}
-
 
             <div className="relative z-10 h-full flex flex-col gap-6">
                 {/* Header */}
@@ -442,7 +491,6 @@ const ScrollSections = () => {
                     </div>
                 </div>
             </div>
-
 
             <style jsx>{`
                 @keyframes fadeInUp {

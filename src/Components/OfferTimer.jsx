@@ -21,7 +21,7 @@ export default function OfferTimer() {
   const pad = n => String(n).padStart(2, '0');
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-black text-white flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 px-4 py-3 z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-black text-white flex flex-col sm:flex-row items-center justify-between md:justify-center gap-3 sm:gap-6 px-4 py-3 z-50">
       {/* Message and offer text */}
       <div className="flex items-center gap-2 text-xs sm:text-sm">
         <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />

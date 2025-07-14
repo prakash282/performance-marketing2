@@ -91,9 +91,9 @@ export default function AuditComparisonTable() {
                     <span className="text-black">Fast-Track Audit</span>
                   </div>
                   <div className="text-xs text-gray-600 mt-1 font-normal">₹999 only</div>
-                  <div className="absolute top-0 right-0 bg-black text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg">
+                  {/* <div className="absolute top-0 right-0 bg-black text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg">
                     POPULAR
-                  </div>
+                  </div> */}
                 </th>
               </tr>
             </thead>
