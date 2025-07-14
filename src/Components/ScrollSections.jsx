@@ -343,37 +343,6 @@ const ScrollSections = () => {
                 </div>
             )}
 
-            {/* Navigation Arrows - Mobile Only */}
-            {/* {isMobile && (
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-50 flex flex-col space-y-4">
-                    <button
-                        onClick={() => goToSection(currentSection - 1)}
-                        disabled={currentSection === 0 || isAnimating}
-                        className={`w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center transition-all duration-300 ${
-                            currentSection === 0 || isAnimating
-                                ? 'opacity-50 cursor-not-allowed'
-                                : 'hover:bg-white/30 hover:scale-105'
-                        }`}
-                    >
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
-                    </button>
-                    <button
-                        onClick={() => goToSection(currentSection + 1)}
-                        disabled={currentSection === sections.length - 1 || isAnimating}
-                        className={`w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center transition-all duration-300 ${
-                            currentSection === sections.length - 1 || isAnimating
-                                ? 'opacity-50 cursor-not-allowed'
-                                : 'hover:bg-white/30 hover:scale-105'
-                        }`}
-                    >
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-                </div>
-            )} */}
 
             <div className="relative z-10 h-full flex flex-col gap-6">
                 {/* Header */}
@@ -474,15 +443,6 @@ const ScrollSections = () => {
                 </div>
             </div>
 
-            {/* Mobile Swipe Hint */}
-            {/* {isMobile && currentSection === 0 && (
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center space-y-2 animate-bounce">
-                    <div className="text-white/60 text-xs">Swipe up to continue</div>
-                    <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                    </svg>
-                </div>
-            )} */}
 
             <style jsx>{`
                 @keyframes fadeInUp {
