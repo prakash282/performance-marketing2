@@ -10,8 +10,8 @@ const ScrollSections = () => {
     const imageRef = useRef(null);
     const lastScrollTime = useRef(0);
     const scrollAccumulator = useRef(0);
-    const scrollCooldown = 400; // Increased cooldown for better mobile experience
-    const scrollThreshold = 30; // Reduced threshold for more responsive scrolling
+    const scrollCooldown = 400;
+    const scrollThreshold = 30;
     const touchStartY = useRef(0);
     const touchStartX = useRef(0);
     const isScrolling = useRef(false);
@@ -117,6 +117,7 @@ const ScrollSections = () => {
 
     const goToSection = (index) => {
         if (isAnimating || index === currentSection || isScrolling.current) return;
+        if (index < 0 || index >= sections.length) return;
 
         isScrolling.current = true;
         setIsAnimating(true);
@@ -154,7 +155,6 @@ const ScrollSections = () => {
                 }
                 setIsAnimating(false);
 
-                // Reset scrolling flag after animation completes
                 setTimeout(() => {
                     isScrolling.current = false;
                 }, 100);
@@ -166,40 +166,38 @@ const ScrollSections = () => {
         const containerElement = containerRef.current;
         if (!containerElement) return;
 
-   // inside your useEffect
-const handleWheel = e => {
-  const deltaY = e.deltaY;
+        const handleWheel = e => {
+            const deltaY = e.deltaY;
 
-  // boundary check: let page scroll past when at ends
-  if ((currentSection === 0 && deltaY < 0) ||
-      (currentSection === sections.length - 1 && deltaY > 0)) {
-    return;
-  }
+            // Allow normal page scrolling when at boundaries
+            if ((currentSection === 0 && deltaY < 0) ||
+                (currentSection === sections.length - 1 && deltaY > 0)) {
+                return;
+            }
 
-  e.preventDefault();
-  e.stopPropagation();
+            e.preventDefault();
+            e.stopPropagation();
 
-  if (isAnimating || isScrolling.current) return;
+            if (isAnimating || isScrolling.current) return;
 
-  const now = Date.now();
-  if (now - lastScrollTime.current > scrollCooldown) {
-    scrollAccumulator.current = 0;
-  }
+            const now = Date.now();
+            if (now - lastScrollTime.current > scrollCooldown) {
+                scrollAccumulator.current = 0;
+            }
 
-  scrollAccumulator.current += Math.abs(deltaY);
+            scrollAccumulator.current += Math.abs(deltaY);
 
-  if (scrollAccumulator.current >= scrollThreshold && (now - lastScrollTime.current) >= scrollCooldown) {
-    lastScrollTime.current = now;
-    scrollAccumulator.current = 0;
+            if (scrollAccumulator.current >= scrollThreshold && (now - lastScrollTime.current) >= scrollCooldown) {
+                lastScrollTime.current = now;
+                scrollAccumulator.current = 0;
 
-    if (deltaY > 0) {
-      goToSection(currentSection + 1);
-    } else {
-      goToSection(currentSection - 1);
-    }
-  }
-};
-
+                if (deltaY > 0) {
+                    goToSection(currentSection + 1);
+                } else {
+                    goToSection(currentSection - 1);
+                }
+            }
+        };
 
         const handleTouchStart = (e) => {
             touchStartY.current = e.touches[0].clientY;
@@ -207,9 +205,16 @@ const handleWheel = e => {
         };
 
         const handleTouchMove = (e) => {
-            // Prevent default scroll behavior on mobile
-            e.preventDefault();
-            e.stopPropagation();
+            if (!touchStartY.current) return;
+            
+            const currentY = e.touches[0].clientY;
+            const deltaY = touchStartY.current - currentY;
+            
+            // Only prevent default if we're in the middle of sections or moving in the controlled direction
+            if (!((currentSection === 0 && deltaY < 0) || (currentSection === sections.length - 1 && deltaY > 0))) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
         };
 
         const handleTouchEnd = e => {
@@ -219,14 +224,17 @@ const handleWheel = e => {
             const deltaY = touchStartY.current - touchEndY;
             const now = Date.now();
 
-            // boundary check: let page scroll past when at ends
+            // Increased threshold for mobile for better UX
+            const mobileThreshold = 50;
+
+            // Allow normal page scrolling when at boundaries
             if ((currentSection === 0 && deltaY < 0) ||
                 (currentSection === sections.length - 1 && deltaY > 0)) {
                 touchStartY.current = 0;
                 return;
             }
 
-            if (Math.abs(deltaY) > 30 && (now - lastScrollTime.current) >= scrollCooldown) {
+            if (Math.abs(deltaY) > mobileThreshold && (now - lastScrollTime.current) >= scrollCooldown) {
                 lastScrollTime.current = now;
 
                 if (deltaY > 0) {
@@ -238,7 +246,6 @@ const handleWheel = e => {
 
             touchStartY.current = 0;
         };
-
 
         const handleKeyDown = (e) => {
             if (!containerElement.contains(document.activeElement) && !containerElement.matches(':hover')) {
@@ -266,11 +273,10 @@ const handleWheel = e => {
             }
         };
 
-        // Add passive: false to prevent default behavior
         containerElement.addEventListener('wheel', handleWheel, { passive: false });
-        containerElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+        containerElement.addEventListener('touchstart', handleTouchStart, { passive: true });
         containerElement.addEventListener('touchmove', handleTouchMove, { passive: false });
-        containerElement.addEventListener('touchend', handleTouchEnd, { passive: false });
+        containerElement.addEventListener('touchend', handleTouchEnd, { passive: true });
         window.addEventListener('keydown', handleKeyDown);
 
         return () => {
@@ -280,7 +286,7 @@ const handleWheel = e => {
             containerElement.removeEventListener('touchend', handleTouchEnd);
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [currentSection, isAnimating, isMobile]);
+    }, [currentSection, isAnimating, isMobile, sections.length]);
 
     const currentData = sections[currentSection];
 
@@ -289,8 +295,8 @@ const handleWheel = e => {
             ref={containerRef}
             className="h-screen w-full overflow-hidden relative"
             style={{
-                touchAction: 'none', // Disable default touch scrolling
-                overscrollBehavior: 'none' // Prevent overscroll effects
+                touchAction: 'pan-y', // Allow vertical panning but control it
+                overscrollBehavior: 'none'
             }}
         >
             <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-gray-800">
@@ -318,6 +324,56 @@ const handleWheel = e => {
 
                 <div className="absolute inset-0 backdrop-blur-sm bg-black/20" />
             </div>
+
+            {/* Navigation Dots - Mobile Only */}
+            {isMobile && (
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-50 flex flex-col space-y-2">
+                    {sections.map((_, index) => (
+                        <button
+                            key={index}
+                            onClick={() => goToSection(index)}
+                            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                index === currentSection
+                                    ? 'bg-white scale-125'
+                                    : 'bg-white/40 hover:bg-white/60'
+                            }`}
+                            disabled={isAnimating}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Navigation Arrows - Mobile Only */}
+            {/* {isMobile && (
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-50 flex flex-col space-y-4">
+                    <button
+                        onClick={() => goToSection(currentSection - 1)}
+                        disabled={currentSection === 0 || isAnimating}
+                        className={`w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center transition-all duration-300 ${
+                            currentSection === 0 || isAnimating
+                                ? 'opacity-50 cursor-not-allowed'
+                                : 'hover:bg-white/30 hover:scale-105'
+                        }`}
+                    >
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={() => goToSection(currentSection + 1)}
+                        disabled={currentSection === sections.length - 1 || isAnimating}
+                        className={`w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center transition-all duration-300 ${
+                            currentSection === sections.length - 1 || isAnimating
+                                ? 'opacity-50 cursor-not-allowed'
+                                : 'hover:bg-white/30 hover:scale-105'
+                        }`}
+                    >
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                </div>
+            )} */}
 
             <div className="relative z-10 h-full flex flex-col gap-6">
                 {/* Header */}
@@ -416,9 +472,17 @@ const handleWheel = e => {
                         </div>
                     </div>
                 </div>
-
-
             </div>
+
+            {/* Mobile Swipe Hint */}
+            {/* {isMobile && currentSection === 0 && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center space-y-2 animate-bounce">
+                    <div className="text-white/60 text-xs">Swipe up to continue</div>
+                    <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                </div>
+            )} */}
 
             <style jsx>{`
                 @keyframes fadeInUp {
