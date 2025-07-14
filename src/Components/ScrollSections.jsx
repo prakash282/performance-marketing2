@@ -10,10 +10,11 @@ const ScrollSections = () => {
     const imageRef = useRef(null);
     const lastScrollTime = useRef(0);
     const scrollAccumulator = useRef(0);
-    const scrollCooldown = 300;
-    const scrollThreshold = 50;
+    const scrollCooldown = 400; // Increased cooldown for better mobile experience
+    const scrollThreshold = 30; // Reduced threshold for more responsive scrolling
     const touchStartY = useRef(0);
     const touchStartX = useRef(0);
+    const isScrolling = useRef(false);
 
     const sections = [
         {
@@ -115,8 +116,9 @@ const ScrollSections = () => {
     }, [isMobile]);
 
     const goToSection = (index) => {
-        if (isAnimating || index === currentSection) return;
+        if (isAnimating || index === currentSection || isScrolling.current) return;
 
+        isScrolling.current = true;
         setIsAnimating(true);
 
         if (contentRef.current && imageRef.current) {
@@ -151,6 +153,11 @@ const ScrollSections = () => {
                     imageRef.current.style.filter = 'blur(0px)';
                 }
                 setIsAnimating(false);
+                
+                // Reset scrolling flag after animation completes
+                setTimeout(() => {
+                    isScrolling.current = false;
+                }, 100);
             }, 100);
         }, 400);
     };
@@ -160,15 +167,14 @@ const ScrollSections = () => {
         if (!containerElement) return;
 
         const handleWheel = (e) => {
-            if (!containerElement.contains(e.target)) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (isAnimating || isScrolling.current) return;
 
             const now = Date.now();
 
-            if (isAnimating) {
-                e.preventDefault();
-                return;
-            }
-
+            // Check if we're at boundaries
             if (e.deltaY > 0 && currentSection === sections.length - 1) {
                 scrollAccumulator.current = 0;
                 return;
@@ -178,9 +184,6 @@ const ScrollSections = () => {
                 scrollAccumulator.current = 0;
                 return;
             }
-
-            e.preventDefault();
-            e.stopPropagation();
 
             if (now - lastScrollTime.current > scrollCooldown) {
                 scrollAccumulator.current = 0;
@@ -209,8 +212,14 @@ const ScrollSections = () => {
             touchStartX.current = e.touches[0].clientX;
         };
 
+        const handleTouchMove = (e) => {
+            // Prevent default scroll behavior on mobile
+            e.preventDefault();
+            e.stopPropagation();
+        };
+
         const handleTouchEnd = (e) => {
-            if (!touchStartY.current || isAnimating) return;
+            if (!touchStartY.current || isAnimating || isScrolling.current) return;
 
             const touchEndY = e.changedTouches[0].clientY;
             const touchEndX = e.changedTouches[0].clientX;
@@ -219,19 +228,26 @@ const ScrollSections = () => {
 
             const now = Date.now();
 
-            if (Math.abs(deltaY) > 50 && deltaX < 100 && (now - lastScrollTime.current) >= scrollCooldown) {
+            // Reduced threshold for more responsive mobile scrolling
+            if (Math.abs(deltaY) > 30 && deltaX < 100 && (now - lastScrollTime.current) >= scrollCooldown) {
                 lastScrollTime.current = now;
 
                 if (deltaY > 0) {
+                    // Swipe up - go to next section
                     if (currentSection < sections.length - 1) {
                         goToSection(currentSection + 1);
                     }
                 } else {
+                    // Swipe down - go to previous section
                     if (currentSection > 0) {
                         goToSection(currentSection - 1);
                     }
                 }
             }
+
+            // Reset touch positions
+            touchStartY.current = 0;
+            touchStartX.current = 0;
         };
 
         const handleKeyDown = (e) => {
@@ -241,7 +257,7 @@ const ScrollSections = () => {
 
             const now = Date.now();
 
-            if (isAnimating || (now - lastScrollTime.current) < scrollCooldown) {
+            if (isAnimating || isScrolling.current || (now - lastScrollTime.current) < scrollCooldown) {
                 return;
             }
 
@@ -260,14 +276,17 @@ const ScrollSections = () => {
             }
         };
 
+        // Add passive: false to prevent default behavior
         containerElement.addEventListener('wheel', handleWheel, { passive: false });
-        containerElement.addEventListener('touchstart', handleTouchStart, { passive: true });
-        containerElement.addEventListener('touchend', handleTouchEnd, { passive: true });
+        containerElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+        containerElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+        containerElement.addEventListener('touchend', handleTouchEnd, { passive: false });
         window.addEventListener('keydown', handleKeyDown);
 
         return () => {
             containerElement.removeEventListener('wheel', handleWheel);
             containerElement.removeEventListener('touchstart', handleTouchStart);
+            containerElement.removeEventListener('touchmove', handleTouchMove);
             containerElement.removeEventListener('touchend', handleTouchEnd);
             window.removeEventListener('keydown', handleKeyDown);
         };
@@ -276,7 +295,14 @@ const ScrollSections = () => {
     const currentData = sections[currentSection];
 
     return (
-        <div ref={containerRef} className="h-screen w-full overflow-hidden relative">
+        <div 
+            ref={containerRef} 
+            className="h-screen w-full overflow-hidden relative"
+            style={{ 
+                touchAction: 'none', // Disable default touch scrolling
+                overscrollBehavior: 'none' // Prevent overscroll effects
+            }}
+        >
             <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-gray-800">
                 <div className="absolute inset-0 overflow-hidden">
                     {[...Array(isMobile ? 20 : 50)].map((_, i) => (
@@ -305,7 +331,7 @@ const ScrollSections = () => {
 
             <div className="relative z-10 h-full flex flex-col gap-6">
                 {/* Header */}
-                <div className="flex items-center justify-center pt-6  px-4">
+                <div className="flex items-center justify-center pt-6 px-4">
                     <div className="text-center">
                         <div className="inline-flex items-center px-3 py-1 md:px-4 md:py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-3 md:mb-4">
                             <span className="text-xs md:text-sm text-gray-200">Premium Marketing Audit</span>
@@ -401,6 +427,7 @@ const ScrollSections = () => {
                     </div>
                 </div>
 
+              
             </div>
 
             <style jsx>{`
