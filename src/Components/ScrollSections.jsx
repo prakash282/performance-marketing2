@@ -153,7 +153,7 @@ const ScrollSections = () => {
                     imageRef.current.style.filter = 'blur(0px)';
                 }
                 setIsAnimating(false);
-                
+
                 // Reset scrolling flag after animation completes
                 setTimeout(() => {
                     isScrolling.current = false;
@@ -166,46 +166,40 @@ const ScrollSections = () => {
         const containerElement = containerRef.current;
         if (!containerElement) return;
 
-        const handleWheel = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+   // inside your useEffect
+const handleWheel = e => {
+  const deltaY = e.deltaY;
 
-            if (isAnimating || isScrolling.current) return;
+  // boundary check: let page scroll past when at ends
+  if ((currentSection === 0 && deltaY < 0) ||
+      (currentSection === sections.length - 1 && deltaY > 0)) {
+    return;
+  }
 
-            const now = Date.now();
+  e.preventDefault();
+  e.stopPropagation();
 
-            // Check if we're at boundaries
-            if (e.deltaY > 0 && currentSection === sections.length - 1) {
-                scrollAccumulator.current = 0;
-                return;
-            }
+  if (isAnimating || isScrolling.current) return;
 
-            if (e.deltaY < 0 && currentSection === 0) {
-                scrollAccumulator.current = 0;
-                return;
-            }
+  const now = Date.now();
+  if (now - lastScrollTime.current > scrollCooldown) {
+    scrollAccumulator.current = 0;
+  }
 
-            if (now - lastScrollTime.current > scrollCooldown) {
-                scrollAccumulator.current = 0;
-            }
+  scrollAccumulator.current += Math.abs(deltaY);
 
-            scrollAccumulator.current += Math.abs(e.deltaY);
+  if (scrollAccumulator.current >= scrollThreshold && (now - lastScrollTime.current) >= scrollCooldown) {
+    lastScrollTime.current = now;
+    scrollAccumulator.current = 0;
 
-            if (scrollAccumulator.current >= scrollThreshold && (now - lastScrollTime.current) >= scrollCooldown) {
-                lastScrollTime.current = now;
-                scrollAccumulator.current = 0;
+    if (deltaY > 0) {
+      goToSection(currentSection + 1);
+    } else {
+      goToSection(currentSection - 1);
+    }
+  }
+};
 
-                if (e.deltaY > 0) {
-                    if (currentSection < sections.length - 1) {
-                        goToSection(currentSection + 1);
-                    }
-                } else {
-                    if (currentSection > 0) {
-                        goToSection(currentSection - 1);
-                    }
-                }
-            }
-        };
 
         const handleTouchStart = (e) => {
             touchStartY.current = e.touches[0].clientY;
@@ -218,37 +212,33 @@ const ScrollSections = () => {
             e.stopPropagation();
         };
 
-        const handleTouchEnd = (e) => {
+        const handleTouchEnd = e => {
             if (!touchStartY.current || isAnimating || isScrolling.current) return;
 
             const touchEndY = e.changedTouches[0].clientY;
-            const touchEndX = e.changedTouches[0].clientX;
             const deltaY = touchStartY.current - touchEndY;
-            const deltaX = Math.abs(touchStartX.current - touchEndX);
-
             const now = Date.now();
 
-            // Reduced threshold for more responsive mobile scrolling
-            if (Math.abs(deltaY) > 30 && deltaX < 100 && (now - lastScrollTime.current) >= scrollCooldown) {
+            // boundary check: let page scroll past when at ends
+            if ((currentSection === 0 && deltaY < 0) ||
+                (currentSection === sections.length - 1 && deltaY > 0)) {
+                touchStartY.current = 0;
+                return;
+            }
+
+            if (Math.abs(deltaY) > 30 && (now - lastScrollTime.current) >= scrollCooldown) {
                 lastScrollTime.current = now;
 
                 if (deltaY > 0) {
-                    // Swipe up - go to next section
-                    if (currentSection < sections.length - 1) {
-                        goToSection(currentSection + 1);
-                    }
+                    goToSection(currentSection + 1);
                 } else {
-                    // Swipe down - go to previous section
-                    if (currentSection > 0) {
-                        goToSection(currentSection - 1);
-                    }
+                    goToSection(currentSection - 1);
                 }
             }
 
-            // Reset touch positions
             touchStartY.current = 0;
-            touchStartX.current = 0;
         };
+
 
         const handleKeyDown = (e) => {
             if (!containerElement.contains(document.activeElement) && !containerElement.matches(':hover')) {
@@ -295,10 +285,10 @@ const ScrollSections = () => {
     const currentData = sections[currentSection];
 
     return (
-        <div 
-            ref={containerRef} 
+        <div
+            ref={containerRef}
             className="h-screen w-full overflow-hidden relative"
-            style={{ 
+            style={{
                 touchAction: 'none', // Disable default touch scrolling
                 overscrollBehavior: 'none' // Prevent overscroll effects
             }}
@@ -427,7 +417,7 @@ const ScrollSections = () => {
                     </div>
                 </div>
 
-              
+
             </div>
 
             <style jsx>{`
