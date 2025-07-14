@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+
+.offertime {
+	font-size: 20px;
+	animation: beat .30s infinite alternate;
+	transform-origin: center;
+}
+
+/* Heart beat animation */
+@keyframes beat{
+	to { transform: scale(1.1); }
+}
