@@ -43,7 +43,7 @@ const ScrollSections = () => {
             id: 3,
             title: "CRO suggestions to lift conversion rate (LP, cart, thank you page)",
             content: "Actionable conversion optimization recommendations that can immediately boost your sales and reduce abandoned carts",
-            image: "https://images.unsplash.com/photo-1680518413-7d94cc18949d?w=600&h=800&fit=crop&crop=center",
+            image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=600&h=800&fit=crop&crop=center", // E-commerce/online shopping
             color: "from-gray-800 to-black",
             accentColor: "from-gray-50 to-gray-200",
             features: ["Landing Page Optimization", "Cart Improvements", "Thank You Page"]
@@ -246,16 +246,16 @@ const ScrollSections = () => {
 
         const handleTouchMove = (e) => {
             if (!touchStartY.current) return;
-            
+
             const currentY = e.touches[0].clientY;
             const deltaY = touchStartY.current - currentY;
-            
+
             // Check scroll permissions for touch
-            const shouldPrevent = 
+            const shouldPrevent =
                 (currentSection === 0 && deltaY < 0 && !canScrollUp) ||
                 (currentSection === sections.length - 1 && deltaY > 0 && !canScrollDown) ||
                 (currentSection > 0 && currentSection < sections.length - 1);
-            
+
             if (shouldPrevent) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -347,7 +347,7 @@ const ScrollSections = () => {
                 overscrollBehavior: 'none'
             }}
         >
-     
+
 
             <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-gray-800">
                 <div className="absolute inset-0 overflow-hidden">
@@ -382,11 +382,10 @@ const ScrollSections = () => {
                         <button
                             key={index}
                             onClick={() => goToSection(index)}
-                            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                                index === currentSection
+                            className={`w-2 h-2 rounded-full transition-all duration-300 ${index === currentSection
                                     ? 'bg-white scale-125'
                                     : 'bg-white/40 hover:bg-white/60'
-                            }`}
+                                }`}
                             disabled={isAnimating}
                         />
                     ))}
